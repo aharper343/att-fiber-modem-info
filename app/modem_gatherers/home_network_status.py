@@ -1,7 +1,8 @@
+from typing import TypedDict, Optional
 
-from app.modem_gatherers import ModemClientDataGatherer
-from app.modem_client import ModemClient
-from typing import TypedDict
+from modem_client import ModemClient
+from modem_gatherers import ModemClientDataGatherer
+
 
 class PortLanStatistics(TypedDict):
     port: int
@@ -20,25 +21,43 @@ class PortLanStatistics(TypedDict):
     receive_dropped: int
     receive_errors: int
 
-class LanStatistics(TypedDict):
-    lan_statistics: list[PortLanStatistics]
 
 class HomeNetworkStatusGatherer(ModemClientDataGatherer):
 
     def __init__(self, client: ModemClient):
         super().__init__(client, '/cgi-bin/lanstatistics.ha')
 
-    def _map(self, stats: dict) -> LanStatistics:
+    def _map(self, stats: dict) -> Optional[list[PortLanStatistics]]:
         if not stats:
             return None
         stats = stats.get('LAN Ethernet Statistics Table', {})
         if not stats:
             return None
         lan_stats_list = []
-        for port in range(len(stats.get('State', []))):
+        state_list = stats.get('State', [])
+        num_ports = len(state_list)
+        if num_ports == 0:
+            return lan_stats_list
+
+        # Get all required lists and verify they have the same length
+        required_fields = [
+            'Transmit Speed', 'Transmit Packets', 'Transmit Bytes', 'Transmit Unicast',
+            'Transmit Multicast', 'Transmit Dropped', 'Transmit Errors',
+            'Receive Packets', 'Receive Bytes', 'Receive Unicast', 'Receive Multicast',
+            'Receive Dropped', 'Receive Errors'
+        ]
+
+        # Verify all lists have the same length
+        for field in required_fields:
+            field_list = stats.get(field, [])
+            if len(field_list) != num_ports:
+                self.logger.warning(f"Field '{field}' has length {len(field_list)}, expected {num_ports}. Skipping port statistics.")
+                return lan_stats_list
+
+        for port in range(num_ports):
             lan_stats_list.append(PortLanStatistics(
                 port=port + 1,
-                state=self._to_upper(stats.get('State', [])[port]),
+                state=self._to_upper(state_list[port]),
                 transmit_speed=self._to_int(stats.get('Transmit Speed', [])[port]),
                 transmit_packets=self._to_int(stats.get('Transmit Packets', [])[port]),
                 transmit_bytes=self._to_int(stats.get('Transmit Bytes', [])[port]),
@@ -53,4 +72,4 @@ class HomeNetworkStatusGatherer(ModemClientDataGatherer):
                 receive_dropped=self._to_int(stats.get('Receive Dropped', [])[port]),
                 receive_errors=self._to_int(stats.get('Receive Errors', [])[port])
             ))
-        return LanStatistics(lan_statistics=lan_stats_list)
+        return lan_stats_list

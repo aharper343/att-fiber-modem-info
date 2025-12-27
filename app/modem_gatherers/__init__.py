@@ -1,12 +1,13 @@
 import logging
 from abc import abstractmethod
-from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 from logging import getLogger
-from datetime import timedelta
-from datetime import datetime
-from app.gatherers import DataGatherer
-from app.modem_client import ModemClient
+from typing import Optional
 
+from bs4 import BeautifulSoup
+
+from gatherers import DataGatherer
+from modem_client import ModemClient
 
 
 class ModemClientDataGatherer(DataGatherer):
@@ -47,7 +48,7 @@ class ModemClientDataGatherer(DataGatherer):
                 cols = row.find_all(['td', 'th'])
                 if not cols:
                     continue
-                
+
                 # First column is usually the label
                 label = cols[0].get_text(strip=True)
                 if not label:
@@ -64,36 +65,36 @@ class ModemClientDataGatherer(DataGatherer):
                 else:
                     data = stats
                     level = ''
-                if label in stats:
+                if label in data:
                     self.logger.warning(f"Duplicate label found: {level}{label}, overwriting previous values.")
                 data[label] = values
                 self.logger.debug(f"Found {level}{label} -> {values}")
         return stats
-    
-    def _to_int(self, value: str) -> int:
+
+    def _to_int(self, value: str) -> Optional[int]:
         if not value:
             return None
         try:
             return int(value)
         except (ValueError, TypeError):
             return 0
-        
-    def _to_str(self, value: str) -> str:
+
+    def _to_str(self, value: str) -> Optional[str]:
         if not value:
             return None
         return str(value).strip()
-    
-    def _to_lower(self, value: str) -> str:
+
+    def _to_lower(self, value: str) -> Optional[str]:
         if not value:
             return None
         return str(value).lower().strip()
 
-    def _to_upper(self, value: str) -> str:
+    def _to_upper(self, value: str) -> Optional[str]:
         if not value:
             return None
         return str(value).upper().strip()
-    
-    def _to_datetime(self, value: str):
+
+    def _to_datetime(self, value: str) -> Optional[datetime]:
         value = self._to_str(value)
         if not value:
             return None
@@ -101,19 +102,18 @@ class ModemClientDataGatherer(DataGatherer):
             try:
                 return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
             except ValueError:
-                logger.warning(f"Unable to parse datetime from value: {value}")
+                self.logger.warning(f"Unable to parse datetime from value: {value}")
                 return None
         elif ' ' in value and '/' in value and ':' in value:
             try:
                 return datetime.strptime(value, "%Y/%m/%d %H:%M:%S")
             except ValueError:
-                logger.warning(f"Unable to parse datetime from value: {value}")
+                self.logger.warning(f"Unable to parse datetime from value: {value}")
                 return None
-        logger.warning(f"Unable to parse datetime from value: {value}")
+        self.logger.warning(f"Unable to parse datetime from value: {value}")
         return None
-    
-        
-    def _to_timedelta(self, value: str) -> timedelta:
+
+    def _to_timedelta(self, value: str) -> Optional[timedelta]:
         if not value:
             return None
         split = value.split(':')
@@ -127,5 +127,5 @@ class ModemClientDataGatherer(DataGatherer):
                     return timedelta(minutes=minutes, seconds=seconds)
                 case (seconds,):
                     return timedelta(seconds=seconds)
-        logger.warning(f"Unable to parse timedelta from value: {value}")
+        self.logger.warning(f"Unable to parse timedelta from value: {value}")
         return None

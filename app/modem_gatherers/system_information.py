@@ -1,8 +1,9 @@
-from app.modem_gatherers import ModemClientDataGatherer
-from app.modem_client import ModemClient
-from typing import TypedDict
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import TypedDict, Optional
+
+from modem_client import ModemClient
+from modem_gatherers import ModemClientDataGatherer
+
 
 class SystemInformation(TypedDict):
     manufacturer: str
@@ -16,12 +17,13 @@ class SystemInformation(TypedDict):
     datapump_version: str
     hardware_version: str
 
+
 class SystemInformationGatherer(ModemClientDataGatherer):
 
     def __init__(self, client: ModemClient):
         super().__init__(client, '/cgi-bin/sysinfo.ha')
 
-    def _map(self, stats: dict) ->SystemInformation:
+    def _map(self, stats: dict) -> Optional[SystemInformation]:
         if not stats:
             return None
         stats = stats.get('This table includes system information about the device and its software', {})

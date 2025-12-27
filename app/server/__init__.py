@@ -1,9 +1,11 @@
-
 import logging
 import os
+
 import uvicorn
-from app.exporters import DataExporter
 from fastapi import FastAPI
+
+from exporters import DataExporter
+
 
 class ServerConfig:
     hostname: str
@@ -18,6 +20,7 @@ class ServerConfig:
         hostname = os.getenv('SERVER_HOSTNAME', 'localhost').strip()
         port = int(os.getenv('SERVER_PORT', '8666').strip())
         return ServerConfig(hostname, port)
+
 
 class Server:
 
@@ -47,19 +50,16 @@ class Server:
         uvicorn.run(self.app, host=self.server_config.hostname, port=self.server_config.port)
 
     def _register_exporter_routes(self, exporter: DataExporter):
-        endpoint = exporter.getExportEndpoint()
-        response_class = exporter.getExportEndpointResponseClass()
+        endpoint = exporter.get_export_endpoint()
+        response_class = exporter.get_export_endpoint_response_class()
         media_type = response_class.media_type
-        
-        self.logger.info(f"Registering route: {endpoint} {media_type} for exporter: {exporter.getName()}")
-        
-        async def exporter_endpoint():
-            data = exporter.export()
+
+        self.logger.info(f"Registering route: {endpoint} {media_type} for exporter: {exporter.get_name()}")
+
+        async def exporter_endpoint(e=exporter):
+            data = e.export()
             return data
-        
+
         self.app.add_api_route(endpoint, exporter_endpoint, response_class=response_class)
 
         return self.RegisteredEndpoint('GET', endpoint, media_type)
-
-
-

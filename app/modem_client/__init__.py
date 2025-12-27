@@ -1,5 +1,6 @@
-import requests
 import os
+
+import requests
 from bs4 import BeautifulSoup
 
 
@@ -17,7 +18,8 @@ class ModemConfig:
             url=os.getenv("MODEM_URL", "http://192.168.1.254"),
             access_code=os.getenv("MODEM_ACCESS_CODE", None)
         )
-        
+
+
 class ModemClient:
 
     def __init__(self, config: ModemConfig):

@@ -1,8 +1,7 @@
 import logging
 import re
 from abc import ABC, abstractmethod
-from datetime import timedelta
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 
 
@@ -12,7 +11,7 @@ class DataGatherer(ABC):
     def gather(self):
         pass
 
-    def getName(self) -> str:
+    def get_name(self) -> str:
         return self.__class__.__name__
 
 
@@ -33,7 +32,7 @@ class CachingDataGatherer(DataGatherer):
         else:
             self.logger.info("Returning cached data.")
         return self.cache
-    
-    def getName(self) -> str:
-        return self.gatherer.getName()
-    
+
+    def get_name(self) -> str:
+        return self.gatherer.get_name()
+

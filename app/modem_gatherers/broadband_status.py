@@ -1,6 +1,8 @@
-from app.modem_gatherers import ModemClientDataGatherer
-from app.modem_client import ModemClient
-from typing import TypedDict
+from typing import TypedDict, Optional
+
+from modem_client import ModemClient
+from modem_gatherers import ModemClientDataGatherer
+
 
 class BroadbandWanInformation(TypedDict):
     connection_source: str
@@ -15,10 +17,12 @@ class BroadbandWanInformation(TypedDict):
     secondary_dns_name: str
     mtu: int
 
+
 class EthernetStatistics(TypedDict):
-     line_state: str
-     current_speed_mbps: int
-     duplex_mode: str
+    line_state: str
+    current_speed_mbps: int
+    duplex_mode: str
+
 
 class IPv6Information(TypedDict):
     status: str
@@ -29,6 +33,7 @@ class IPv6Information(TypedDict):
     primary_dns: str
     secondary_dns: str
     mtu: int
+
 
 class EthernetIPv4Statistics(TypedDict):
     receive_packets: int
@@ -45,6 +50,7 @@ class EthernetIPv4Statistics(TypedDict):
     transmit_errors: int
     collisions: int
 
+
 class EthernetIPv6Statistics(TypedDict):
     receive_packets: int
     transmit_packets: int
@@ -56,7 +62,6 @@ class EthernetIPv6Statistics(TypedDict):
     transmit_errors: int
 
 
-
 class BroadbandStatus(TypedDict):
     broadband_wan_information: BroadbandWanInformation
     ethernet_statistics: EthernetStatistics
@@ -64,12 +69,13 @@ class BroadbandStatus(TypedDict):
     ipv4_statistics: EthernetIPv4Statistics
     ipv6_statistics: EthernetIPv6Statistics
 
+
 class BroadbandStatusGatherer(ModemClientDataGatherer):
- 
+
     def __init__(self, client: ModemClient):
         super().__init__(client, '/cgi-bin/broadbandstatistics.ha')
 
-    def _map(self, stats: dict) -> BroadbandStatus:
+    def _map(self, stats: dict) -> Optional[BroadbandStatus]:
         if not stats:
             return None
         return BroadbandStatus(
@@ -80,7 +86,7 @@ class BroadbandStatusGatherer(ModemClientDataGatherer):
             ipv6_statistics=self._map_ethernet_ipv6_statistics(stats.get('IPv6 Statistics Table', {}))
         )
 
-    def _map_broadband_wan_information(self, stats: dict) -> BroadbandWanInformation:
+    def _map_broadband_wan_information(self, stats: dict) -> Optional[BroadbandWanInformation]:
         if not stats:
             return None
         return BroadbandWanInformation(
@@ -96,8 +102,8 @@ class BroadbandStatusGatherer(ModemClientDataGatherer):
             secondary_dns_name=self._to_str(stats.get("Secondary DNS Name", [""])[0]),
             mtu=self._to_int(stats.get("MTU", [""])[0])
         )
-    
-    def _map_ethernet_statistics(self, stats: dict) -> EthernetStatistics:
+
+    def _map_ethernet_statistics(self, stats: dict) -> Optional[EthernetStatistics]:
         if not stats:
             return None
         return EthernetStatistics(
@@ -105,8 +111,8 @@ class BroadbandStatusGatherer(ModemClientDataGatherer):
             current_speed_mbps=self._to_int(stats.get("Current Speed (Mbps)", [""])[0]),
             duplex_mode=self._to_upper(stats.get("Current Duplex", [""])[0])
         )
-    
-    def _map_ipv6_information(self, stats: dict) -> IPv6Information:
+
+    def _map_ipv6_information(self, stats: dict) -> Optional[IPv6Information]:
         if not stats:
             return None
         return IPv6Information(
@@ -119,8 +125,8 @@ class BroadbandStatusGatherer(ModemClientDataGatherer):
              secondary_dns=self._to_str(stats.get("Secondary DNS", [""])[0]),
              mtu=self._to_int(stats.get("MTU", [""])[0])
         )
-    
-    def _map_ethernet_ipv4_statistics(self, stats: dict) -> EthernetIPv4Statistics:
+
+    def _map_ethernet_ipv4_statistics(self, stats: dict) -> Optional[EthernetIPv4Statistics]:
         if not stats:
             return None
         return EthernetIPv4Statistics(
@@ -138,8 +144,8 @@ class BroadbandStatusGatherer(ModemClientDataGatherer):
             transmit_errors=self._to_int(stats.get("Transmit Errors", [""])[0]),
             collisions=self._to_int(stats.get("Collisions", [""])[0])
         )
-    
-    def _map_ethernet_ipv6_statistics(self, stats: dict) -> EthernetIPv6Statistics:
+
+    def _map_ethernet_ipv6_statistics(self, stats: dict) -> Optional[EthernetIPv6Statistics]:
         if not stats:
             return None
         return EthernetIPv6Statistics(
@@ -150,5 +156,5 @@ class BroadbandStatusGatherer(ModemClientDataGatherer):
             receive_discards=self._to_int(stats.get("Receive Discards", [""])[0]),
             transmit_discards=self._to_int(stats.get("Transmit Discards", [""])[0]),
             receive_errors=self._to_int(stats.get("Receive Errors", [""])[0]),
-            transmit_errors=self._to_int(stats.get("Transmit Errors", [""])[0]),
+            transmit_errors=self._to_int(stats.get("Transmit Errors", [""])[0])
         )
