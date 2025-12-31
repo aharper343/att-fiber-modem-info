@@ -19,7 +19,7 @@ class CachingDataGatherer(DataGatherer):
         self._gatherer = gatherer
         self._cache = TTLCache(maxsize=1, ttl=cache_duration.seconds)
         self._logger = getLogger(self.__class__.__name__)
-        self._logger.info("Initialized CachingDataGatherer with cache_duration=%f", cache_duration)
+        self._logger.info("Initialized CachingDataGatherer with cache_duration=%s", cache_duration)
 
     def gather(self):
         key = self.get_name()
