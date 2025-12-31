@@ -19,14 +19,20 @@ class ModemClientDataGatherer(DataGatherer):
         self.logger = getLogger(self.__class__.__name__)
 
     def gather(self):
-        response = self.client._fetch(self.uri)
-        stats = self._parse_html(response.text)
-        if not stats:
-            self.logger.warning("No stats found.")
-            return None
-        data = self._map(stats)
-        self.logger.info(f"Data -> {data}")
-        return data
+        try:
+            response = self.client._fetch(self.uri)
+            stats = self._parse_html(response.text)
+            if not stats:
+                raise ValueError('No statistics found')
+            data = self._map(stats)
+            self.logger.debug(f"Data -> {data}")
+            return data
+        except Exception as e:
+            self.logger.error(f"Error gathering data from {self.uri}: {e}", exc_info=True)
+            raise
+
+    def get_client_config(self):
+        return self.client.config
 
     @abstractmethod
     def _map(self, stats: dict):
@@ -66,66 +72,97 @@ class ModemClientDataGatherer(DataGatherer):
                     data = stats
                     level = ''
                 if label in data:
-                    self.logger.warning(f"Duplicate label found: {level}{label}, overwriting previous values.")
+                    self.logger.warning(
+                        f"Duplicate label found: {level}{label}, overwriting previous values.")
                 data[label] = values
                 self.logger.debug(f"Found {level}{label} -> {values}")
         return stats
 
-    def _to_int(self, value: str) -> Optional[int]:
-        if not value:
-            return None
-        try:
+    @staticmethod
+    def _get_str_value(data: dict, label: str, required: bool = True, default: str = None) -> Optional[str]:
+        value = data.get(label)
+        if value:
+            value = str(value).strip()
+        if value:
+            return value
+        if required:
+            raise ValueError(f"Missing required value: {label}")
+        return default
+
+    @staticmethod
+    def _get_str_upper_value(data: dict, label: str, required: bool = True, default: str = None) -> Optional[str]:
+        value = ModemClientDataGatherer._get_str_value(
+            data, label, required, default)
+        if value:
+            return value.upper()
+        return default
+
+    @staticmethod
+    def _get_str_lower_value(data: dict, label: str, required: bool = True, default: str = None) -> Optional[str]:
+        value = ModemClientDataGatherer._get_str_value(
+            data, label, required, default)
+        if value:
+            return value.lower()
+        return default
+
+    @staticmethod
+    def _get_int_value(data: dict, label: str, required: bool = True, default: int = None) -> Optional[int]:
+        value = ModemClientDataGatherer._get_str_value(data, label, False)
+        if value:
             return int(value)
-        except (ValueError, TypeError):
-            return 0
+        if required:
+            raise ValueError(f"Missing required value: {label}")
+        return default
 
-    def _to_str(self, value: str) -> Optional[str]:
-        if not value:
-            return None
-        return str(value).strip()
-
-    def _to_lower(self, value: str) -> Optional[str]:
-        if not value:
-            return None
-        return str(value).lower().strip()
-
-    def _to_upper(self, value: str) -> Optional[str]:
-        if not value:
-            return None
-        return str(value).upper().strip()
-
-    def _to_datetime(self, value: str) -> Optional[datetime]:
-        value = self._to_str(value)
-        if not value:
-            return None
-        if 'T' in value and '-' in value and ':' in value:
-            try:
+    @staticmethod
+    def _get_datetime_value(data: dict, label: str, required: bool = True, default: datetime = None) -> Optional[datetime]:
+        value = ModemClientDataGatherer._get_str_value(data, label, False)
+        if value:
+            if 'T' in value and '-' in value and ':' in value:
                 return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                self.logger.warning(f"Unable to parse datetime from value: {value}")
-                return None
-        elif ' ' in value and '/' in value and ':' in value:
-            try:
+            elif ' ' in value and '/' in value and ':' in value:
                 return datetime.strptime(value, "%Y/%m/%d %H:%M:%S")
-            except ValueError:
-                self.logger.warning(f"Unable to parse datetime from value: {value}")
-                return None
-        self.logger.warning(f"Unable to parse datetime from value: {value}")
-        return None
+            else:
+                raise ValueError(
+                    f"Not datetime converter for {label} with value {value}")
+        if required:
+            raise ValueError(f"Missing required value: {label}")
+        return default
 
-    def _to_timedelta(self, value: str) -> Optional[timedelta]:
-        if not value:
-            return None
-        split = value.split(':')
-        if len(split) <= 4:
-            match tuple(map(float, split)):
-                case (days, hours, minutes, seconds):
-                    return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
-                case (hours, minutes, seconds):
-                    return timedelta(hours=hours, minutes=minutes, seconds=seconds)
-                case (minutes, seconds):
-                    return timedelta(minutes=minutes, seconds=seconds)
-                case (seconds,):
-                    return timedelta(seconds=seconds)
-        self.logger.warning(f"Unable to parse timedelta from value: {value}")
-        return None
+    @staticmethod
+    def _get_timedelta_value(data: dict, label: str, required: bool = True, default: timedelta = None) -> Optional[timedelta]:
+        value = ModemClientDataGatherer._get_str_value(data, label, False)
+        if value:
+            split = value.split(':')
+            if len(split) <= 4:
+                match tuple(map(float, split)):
+                    case (days, hours, minutes, seconds):
+                        return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+                    case (hours, minutes, seconds):
+                        return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                    case (minutes, seconds):
+                        return timedelta(minutes=minutes, seconds=seconds)
+                    case (seconds,):
+                        return timedelta(seconds=seconds)
+            raise ValueError(
+                f"Not timedelta converter for {label} with value {value}")
+        if required:
+            raise ValueError(f"Missing required value: {label}")
+        return default
+
+    @staticmethod
+    def _get_data_array_dict(data: dict, label: str, size: int = 1) -> list[dict]:
+        if (not data) or label not in data:
+            raise ValueError(f"Missing required value: {label}")
+        stats = data[label]
+        arr = []
+        for k in stats:
+            r = stats[k]
+            for i in range(0, len(r)):
+                if len(arr) <= i:
+                    arr.append({})
+                arr[i][k] = r[i]
+        if len(arr) != size:
+            raise ValueError(
+                f'Value at label {label} has length {len(arr)} but was expecting {size}')
+        return arr

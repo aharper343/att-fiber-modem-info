@@ -3,3 +3,4 @@ fastapi==0.127.1
 prometheus-client==0.19.0
 requests==2.31.0
 uvicorn==0.40.0
+cachetools==6.2.4

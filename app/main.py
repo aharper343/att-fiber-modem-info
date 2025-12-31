@@ -1,6 +1,12 @@
 import logging
 
-from exporters import DataGathererExporter
+from modem_promtheus_exporters.home_network_status_mapper import HomeNetworkStatusPrometheusMapper
+from modem_promtheus_exporters.system_information_mapper import SystemInformationPrometheusMapper
+from modem_promtheus_exporters.broadband_status_mapper import BroadbandStatusPrometheusMapper
+from prometheus_client import REGISTRY
+
+from prometheus_exporters import PrometheusExporter
+from modem_exporters import ModemDataGathererExporter
 from gatherers import CachingDataGatherer
 from modem_client import ModemClient, ModemConfig
 from modem_gatherers.broadband_status import BroadbandStatusGatherer
@@ -17,11 +23,18 @@ logging.basicConfig(
 
 def main():
     # Start Prometheus metrics server
+
+    registry = REGISTRY
+    
     modem_config = ModemConfig.from_env()
     client = ModemClient(modem_config)
-    gathers = [SystemInformationGatherer(client), BroadbandStatusGatherer(client), HomeNetworkStatusGatherer(client)]
-    cached_gathers = map(lambda g: CachingDataGatherer(g), gathers)
-    exporters = list(map(lambda g: DataGathererExporter(g), cached_gathers))
+    gathers = [SystemInformationGatherer(client), HomeNetworkStatusGatherer(client), BroadbandStatusGatherer(client)]
+    cached_gathers = list(map(lambda g: CachingDataGatherer(g), gathers))
+    mappers = [ SystemInformationPrometheusMapper(cached_gathers[0], registry), 
+                HomeNetworkStatusPrometheusMapper(cached_gathers[1], registry),
+                BroadbandStatusPrometheusMapper(cached_gathers[2], registry)]
+    exporters = list(map(lambda cg: ModemDataGathererExporter(cg), cached_gathers))
+    exporters.append(PrometheusExporter(mappers, registry))        
     server_config = ServerConfig.from_env()
     server = Server(server_config, exporters)
     server.start()

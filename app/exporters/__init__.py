@@ -34,14 +34,22 @@ class DataGathererExporter(DataExporter):
         self.logger = getLogger(self.name)
 
     def export(self):
-        return self.gatherer.gather()
+        value = self.gatherer.gather()
+        if type(value) is list:
+            return [v._asdict() if hasattr(v, '_asdict') else v for v in value]
+        elif hasattr(value, '_asdict'):
+            return value._asdict()
+        return value
 
     def get_name(self) -> str:
         return self.name
 
     def get_export_endpoint(self) -> str:
-        return '/api/' + re.sub(r'(?<!^)(?=[A-Z])', '-', self.gatherer.get_name()).lower().replace('-gatherer', '')
+        return '/gatherer/' + self._normalize_name()
 
     def get_export_endpoint_response_class(self):
         return JSONResponse
+
+    def _normalize_name(self) -> str:
+        return re.sub(r'(?<!^)(?=[A-Z])', '-', self.gatherer.get_name()).lower().replace('-gatherer', '')
 

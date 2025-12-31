@@ -1,9 +1,7 @@
-import logging
-import re
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from logging import getLogger
-
+from cachetools import TTLCache, cached
 
 class DataGatherer(ABC):
 
@@ -18,21 +16,25 @@ class DataGatherer(ABC):
 class CachingDataGatherer(DataGatherer):
 
     def __init__(self, gatherer: DataGatherer, cache_duration: timedelta = timedelta(minutes=5)):
-        self.gatherer = gatherer
-        self.cache_duration = cache_duration
-        self.logger = getLogger(self.__class__.__name__)
-        self.cache = None
-        self.last_update = None
+        self._gatherer = gatherer
+        self._cache = TTLCache(maxsize=1, ttl=cache_duration.seconds)
+        self._logger = getLogger(self.__class__.__name__)
+        self._logger.info("Initialized CachingDataGatherer with cache_duration=%f", cache_duration)
 
     def gather(self):
-        if self.cache is None or (self.last_update is not None and datetime.now() - self.last_update > self.cache_duration):
-            self.logger.info("Cache expired or empty, gathering new data.")
-            self.cache = self.gatherer.gather()
-            self.last_update = datetime.now()
+        key = self.get_name()
+        value = self._cache.get(key, None)
+        if not value:
+            self._logger.info('Cache expired for gatherer %s', key)
+            value = self._gatherer.gather()
+            self._cache[key] = value
         else:
-            self.logger.info("Returning cached data.")
-        return self.cache
+            self._logger.info('Using cached value for gatherer %s', key)
+        return value
 
     def get_name(self) -> str:
-        return self.gatherer.get_name()
+        return self._gatherer.get_name()
 
+    def get_gatherer(self) -> DataGatherer:
+        return self._gatherer
+                

@@ -5,7 +5,7 @@ from modem_gatherers import ModemClientDataGatherer
 
 
 class PortLanStatistics(TypedDict):
-    port: int
+    lan_port: int
     state: str
     transmit_speed: int
     transmit_packets: int
@@ -30,46 +30,41 @@ class HomeNetworkStatusGatherer(ModemClientDataGatherer):
     def _map(self, stats: dict) -> Optional[list[PortLanStatistics]]:
         if not stats:
             return None
-        stats = stats.get('LAN Ethernet Statistics Table', {})
-        if not stats:
-            return None
+        num_ports = 4
+        data = ModemClientDataGatherer._get_data_array_dict(
+            stats, 'LAN Ethernet Statistics Table', num_ports)
         lan_stats_list = []
-        state_list = stats.get('State', [])
-        num_ports = len(state_list)
-        if num_ports == 0:
-            return lan_stats_list
-
-        # Get all required lists and verify they have the same length
-        required_fields = [
-            'Transmit Speed', 'Transmit Packets', 'Transmit Bytes', 'Transmit Unicast',
-            'Transmit Multicast', 'Transmit Dropped', 'Transmit Errors',
-            'Receive Packets', 'Receive Bytes', 'Receive Unicast', 'Receive Multicast',
-            'Receive Dropped', 'Receive Errors'
-        ]
-
-        # Verify all lists have the same length
-        for field in required_fields:
-            field_list = stats.get(field, [])
-            if len(field_list) != num_ports:
-                self.logger.warning(f"Field '{field}' has length {len(field_list)}, expected {num_ports}. Skipping port statistics.")
-                return lan_stats_list
-
         for port in range(num_ports):
+            port_data = data[port]
             lan_stats_list.append(PortLanStatistics(
-                port=port + 1,
-                state=self._to_upper(state_list[port]),
-                transmit_speed=self._to_int(stats.get('Transmit Speed', [])[port]),
-                transmit_packets=self._to_int(stats.get('Transmit Packets', [])[port]),
-                transmit_bytes=self._to_int(stats.get('Transmit Bytes', [])[port]),
-                transmit_unicast=self._to_int(stats.get('Transmit Unicast', [])[port]),
-                transmit_multicast=self._to_int(stats.get('Transmit Multicast', [])[port]),
-                transmit_dropped=self._to_int(stats.get('Transmit Dropped', [])[port]),
-                transmit_errors=self._to_int(stats.get('Transmit Errors', [])[port]),
-                receive_packets=self._to_int(stats.get('Receive Packets', [])[port]),
-                receive_bytes=self._to_int(stats.get('Receive Bytes', [])[port]),
-                receive_unicast=self._to_int(stats.get('Receive Unicast', [])[port]),
-                receive_multicast=self._to_int(stats.get('Receive Multicast', [])[port]),
-                receive_dropped=self._to_int(stats.get('Receive Dropped', [])[port]),
-                receive_errors=self._to_int(stats.get('Receive Errors', [])[port])
+                lan_port=port + 1,
+                state=ModemClientDataGatherer._get_str_upper_value(
+                    port_data, 'State'),
+                transmit_speed=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Transmit Speed'),
+                transmit_packets=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Transmit Packets'),
+                transmit_bytes=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Transmit Bytes'),
+                transmit_unicast=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Transmit Unicast'),
+                transmit_multicast=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Transmit Multicast'),
+                transmit_dropped=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Transmit Dropped'),
+                transmit_errors=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Transmit Errors'),
+                receive_packets=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Receive Packets'),
+                receive_bytes=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Receive Bytes'),
+                receive_unicast=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Receive Unicast'),
+                receive_multicast=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Receive Multicast'),
+                receive_dropped=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Receive Dropped'),
+                receive_errors=ModemClientDataGatherer._get_int_value(
+                    port_data, 'Receive Errors')
             ))
         return lan_stats_list

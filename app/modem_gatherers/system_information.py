@@ -26,18 +26,27 @@ class SystemInformationGatherer(ModemClientDataGatherer):
     def _map(self, stats: dict) -> Optional[SystemInformation]:
         if not stats:
             return None
-        stats = stats.get('This table includes system information about the device and its software', {})
-        if not stats:
-            return None
+        data = ModemClientDataGatherer._get_data_array_dict(
+            stats, 'This table includes system information about the device and its software')[0]
         return SystemInformation(
-            manufacturer=self._to_str(stats.get("Manufacturer", [""])[0]),
-            model_number=self._to_str(stats.get("Model Number", [""])[0]),
-            serial_number=self._to_str(stats.get("Serial Number", [""])[0]),
-            software_version=self._to_str(stats.get("Software Version", [""])[0]),
-            mac_address=self._to_str(stats.get("MAC Address", [""])[0]),
-            first_use_date=self._to_datetime(stats.get("First Use Date", [""])[0]),
-            time_since_last_reboot=self._to_timedelta(stats.get("Time Since Last Reboot", [""])[0]),
-            current_date_time=self._to_datetime(stats.get("Current Date/Time", [""])[0]),
-            datapump_version=self._to_str(stats.get("Datapump Version", [""])[0]),
-            hardware_version=self._to_str(stats.get("Hardware Version", [""])[0])
+            manufacturer=ModemClientDataGatherer._get_str_value(
+                data, "Manufacturer"),
+            model_number=ModemClientDataGatherer._get_str_value(
+                data, "Model Number"),
+            serial_number=ModemClientDataGatherer._get_str_value(
+                data, "Serial Number"),
+            software_version=ModemClientDataGatherer._get_str_value(
+                data, "Software Version"),
+            mac_address=ModemClientDataGatherer._get_str_value(
+                data, "MAC Address"),
+            first_use_date=ModemClientDataGatherer._get_datetime_value(
+                data, "First Use Date"),
+            time_since_last_reboot=ModemClientDataGatherer._get_timedelta_value(
+                data, "Time Since Last Reboot"),
+            current_date_time=ModemClientDataGatherer._get_datetime_value(
+                data, "Current Date/Time"),
+            datapump_version=ModemClientDataGatherer._get_str_value(
+                data, "Datapump Version"),
+            hardware_version=ModemClientDataGatherer._get_str_value(
+                data, "Hardware Version")
         )
