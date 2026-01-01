@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #set -x
-image=andrew/att-modem
+image=andrew/att-modem-exporter
 
 version=$(date '+%Y%m%d')
 

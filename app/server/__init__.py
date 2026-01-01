@@ -22,7 +22,7 @@ class ServerConfig:
 
     @staticmethod
     def from_env():
-        hostname = os.getenv('SERVER_HOSTNAME', 'localhost').strip()
+        hostname = os.getenv('SERVER_HOSTNAME', '0.0.0.0').strip()
         port = int(os.getenv('SERVER_PORT', '8666').strip())
         return ServerConfig(hostname, port)
 

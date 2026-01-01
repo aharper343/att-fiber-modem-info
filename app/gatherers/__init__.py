@@ -15,7 +15,7 @@ class DataGatherer(ABC):
 
 class CachingDataGatherer(DataGatherer):
 
-    def __init__(self, gatherer: DataGatherer, cache_duration: timedelta = timedelta(minutes=5)):
+    def __init__(self, gatherer: DataGatherer, cache_duration: timedelta = timedelta(seconds=5)):
         self._gatherer = gatherer
         self._cache = TTLCache(maxsize=1, ttl=cache_duration.seconds)
         self._logger = getLogger(self.__class__.__name__)
