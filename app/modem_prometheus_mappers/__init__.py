@@ -8,11 +8,11 @@ class PrometheusModemMapper(PrometheusMapper):
 
     def __init__(self, gatherer: ModemClientDataGatherer, registry: CollectorRegistry):
         super().__init__(gatherer, registry)
-        if issubclass(gatherer.__class__, CachingDataGatherer):
+        if isinstance(gatherer, CachingDataGatherer):
             real_gatherer = gatherer.get_gatherer()
         else:
             real_gatherer = gatherer
-        if not issubclass(real_gatherer.__class__, ModemClientDataGatherer):
+        if not isinstance(real_gatherer, ModemClientDataGatherer):
             raise ValueError(f'gatherer should be a sub-class of ModemClientDataGatherer and is type {type(gatherer)}')
         self._config = real_gatherer.get_client_config()
 
@@ -32,7 +32,7 @@ class PrometheusModemMapper(PrometheusMapper):
     def _create_gauge(self, name: str, labels: list[str]) -> Gauge:
         metric_name = self.get_metric_name(name)
         metric_desc = self.get_metric_description(name)
-        self._logger.info("Creating Gauge('%s','%s',%s)", metric_name, metric_desc, labels)
+        self._logger.debug("Creating Gauge('%s','%s',%s)", metric_name, metric_desc, labels)
         return Gauge(metric_name, metric_desc, labels, registry=self.get_registry())
 
     def get_registry(self) -> CollectorRegistry:

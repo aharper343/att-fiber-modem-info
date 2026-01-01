@@ -1,6 +1,6 @@
 from prometheus_client import CollectorRegistry
 from modem_gatherers.broadband_status import BroadbandStatus, EthernetIPv4Statistics, BroadbandStatusGatherer
-from modem_promtheus_exporters import PrometheusModemMapper
+from modem_prometheus_mappers import PrometheusModemMapper
 
 class BroadbandStatusPrometheusMapper(PrometheusModemMapper):
 
@@ -17,6 +17,6 @@ class BroadbandStatusPrometheusMapper(PrometheusModemMapper):
         for k in data:
             v = data[k]
             if v is None:
-                self._logger.warning('Skipping key with no value %s.%s', prefix, k)
+                self._logger.debug('Skipping key with no value %s.%s', prefix, k)
             else:
                 self._get_or_create_gauge(f'{prefix}_{k}', labels).labels(*label_values).set(v)

@@ -29,12 +29,12 @@ class DataExporter(ABC):
 class DataGathererExporter(DataExporter):
 
     def __init__(self, gatherer: DataGatherer):
-        self.gatherer = gatherer
-        self.name = f'{self.__class__.__name__}({self.gatherer.get_name()})'
-        self.logger = getLogger(self.name)
+        self._gatherer = gatherer
+        self._name = f'{self.__class__.__name__}({self._gatherer.get_name()})'
+        self._logger = getLogger(self._name)
 
     def export(self):
-        value = self.gatherer.gather()
+        value = self._gatherer.gather()
         if type(value) is list:
             return [v._asdict() if hasattr(v, '_asdict') else v for v in value]
         elif hasattr(value, '_asdict'):
@@ -42,7 +42,7 @@ class DataGathererExporter(DataExporter):
         return value
 
     def get_name(self) -> str:
-        return self.name
+        return self._name
 
     def get_export_endpoint(self) -> str:
         return '/gatherer/' + self._normalize_name()
@@ -51,5 +51,5 @@ class DataGathererExporter(DataExporter):
         return JSONResponse
 
     def _normalize_name(self) -> str:
-        return re.sub(r'(?<!^)(?=[A-Z])', '-', self.gatherer.get_name()).lower().replace('-gatherer', '')
+        return re.sub(r'(?<!^)(?=[A-Z])', '-', self._gatherer.get_name()).lower().replace('-gatherer', '')
 

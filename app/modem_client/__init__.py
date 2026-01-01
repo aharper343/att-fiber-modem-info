@@ -1,3 +1,4 @@
+import logging
 import os
 
 import requests
@@ -11,6 +12,10 @@ class ModemConfig:
     access_code: str
 
     def __init__(self, id: str, url: str, access_code: str):
+        if not id:
+            raise ValueError("id is required")
+        if not url:
+            raise ValueError("url is required")
         self.id = id
         self.url = url
         self.access_code = access_code
@@ -31,6 +36,7 @@ class ModemClient:
         self.session = requests.Session()
         self.nonce = None
         self.logged_in = False
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def _fetch(self, path) -> requests.Response:
         full_url = urljoin(self.config.url, path)

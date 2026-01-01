@@ -37,7 +37,7 @@ class HomeNetworkStatusGatherer(ModemClientDataGatherer):
         for port in range(num_ports):
             port_data = data[port]
             lan_stats_list.append(PortLanStatistics(
-                lan_port=port + 1,
+                lan_port=port,
                 state=ModemClientDataGatherer._get_str_upper_value(
                     port_data, 'State'),
                 transmit_speed=ModemClientDataGatherer._get_int_value(

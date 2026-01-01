@@ -1,6 +1,6 @@
 from modem_gatherers.system_information import SystemInformationGatherer, SystemInformation
-from modem_promtheus_exporters import PrometheusModemMapper
-from prometheus_client import REGISTRY, CollectorRegistry, Gauge
+from modem_prometheus_mappers import PrometheusModemMapper
+from prometheus_client import REGISTRY, CollectorRegistry
 
 class SystemInformationPrometheusMapper(PrometheusModemMapper):
 
@@ -21,5 +21,5 @@ class SystemInformationPrometheusMapper(PrometheusModemMapper):
             data['serial_number'],
             data['mac_address']
         ]
-        value = float(data['time_since_last_reboot'].seconds) / 60  
+        value = data['time_since_last_reboot'].total_seconds()
         gauge.labels(*label_values).set(value)

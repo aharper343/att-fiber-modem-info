@@ -13,26 +13,26 @@ from modem_client import ModemClient
 class ModemClientDataGatherer(DataGatherer):
 
     def __init__(self, client: ModemClient, uri: str, requires_login: bool = False):
-        self.client = client
-        self.uri = uri
-        self.requires_login = requires_login
-        self.logger = getLogger(self.__class__.__name__)
+        self._client = client
+        self._uri = uri
+        self._requires_login = requires_login
+        self._logger = getLogger(self.__class__.__name__)
 
     def gather(self):
         try:
-            response = self.client._fetch(self.uri)
+            response = self._client._fetch(self._uri)
             stats = self._parse_html(response.text)
             if not stats:
                 raise ValueError('No statistics found')
             data = self._map(stats)
-            self.logger.debug(f"Data -> {data}")
+            self._logger.debug(f"Data -> {data}")
             return data
         except Exception as e:
-            self.logger.error(f"Error gathering data from {self.uri}: {e}", exc_info=True)
+            self._logger.error(f"Error gathering data from {self._uri}: {e}", exc_info=True)
             raise
 
     def get_client_config(self):
-        return self.client.config
+        return self._client.config
 
     @abstractmethod
     def _map(self, stats: dict):
@@ -48,7 +48,7 @@ class ModemClientDataGatherer(DataGatherer):
         tables = soup.find_all('table')
         for table in tables:
             summary = table.get('summary', '')
-            self.logger.debug(f"Parsing table with summary: {summary}")
+            self._logger.debug(f"Parsing table with summary: {summary}")
             rows = table.find_all('tr')
             for row in rows:
                 cols = row.find_all(['td', 'th'])
@@ -72,10 +72,10 @@ class ModemClientDataGatherer(DataGatherer):
                     data = stats
                     level = ''
                 if label in data:
-                    self.logger.warning(
+                    self._logger.warning(
                         f"Duplicate label found: {level}{label}, overwriting previous values.")
                 data[label] = values
-                self.logger.debug(f"Found {level}{label} -> {values}")
+                self._logger.debug(f"Found {level}{label} -> {values}")
         return stats
 
     @staticmethod

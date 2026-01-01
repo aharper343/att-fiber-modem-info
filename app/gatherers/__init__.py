@@ -19,17 +19,17 @@ class CachingDataGatherer(DataGatherer):
         self._gatherer = gatherer
         self._cache = TTLCache(maxsize=1, ttl=cache_duration.seconds)
         self._logger = getLogger(self.__class__.__name__)
-        self._logger.info("Initialized CachingDataGatherer with cache_duration=%s", cache_duration)
+        self._logger.info("Initialized CachingDataGatherer for %s with cache_duration=%s", gatherer.get_name(), cache_duration)
 
     def gather(self):
         key = self.get_name()
         value = self._cache.get(key, None)
         if not value:
-            self._logger.info('Cache expired for gatherer %s', key)
+            self._logger.debug('Cache expired for gatherer %s', key)
             value = self._gatherer.gather()
             self._cache[key] = value
         else:
-            self._logger.info('Using cached value for gatherer %s', key)
+            self._logger.debug('Using cached value for gatherer %s', key)
         return value
 
     def get_name(self) -> str:

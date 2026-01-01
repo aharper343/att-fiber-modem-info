@@ -8,13 +8,13 @@ class ModemDataGathererExporter(DataGathererExporter):
     def __init__(self, gatherer: ModemClientDataGatherer):
         super().__init__(gatherer)
         real_gatherer = gatherer
-        if issubclass(gatherer.__class__, CachingDataGatherer):
+        if isinstance(gatherer, CachingDataGatherer):
             real_gatherer = gatherer.get_gatherer()
-        if not issubclass(real_gatherer.__class__, ModemClientDataGatherer):
+        if not isinstance(real_gatherer, ModemClientDataGatherer):
             raise ValueError('Not a subclass')
-        self.modem_id = real_gatherer.get_client_config().id
+        self._modem_id = real_gatherer.get_client_config().id
 
     def get_export_endpoint(self) -> str:
-        base = urljoin('/modems/', f'{quote(self.modem_id)}/')
+        base = urljoin('/modems/', f'{quote(self._modem_id)}/')
         return urljoin(base, self._normalize_name())
 

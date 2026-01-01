@@ -1,6 +1,6 @@
 from prometheus_client import CollectorRegistry
 from modem_gatherers.home_network_status import HomeNetworkStatusGatherer, PortLanStatistics
-from modem_promtheus_exporters import PrometheusModemMapper
+from modem_prometheus_mappers import PrometheusModemMapper
 
 class HomeNetworkStatusPrometheusMapper(PrometheusModemMapper):
 
@@ -10,7 +10,7 @@ class HomeNetworkStatusPrometheusMapper(PrometheusModemMapper):
     def _map(self, data: list[PortLanStatistics]) -> None:
         labels = self.get_common_labels() + [ 'lan_port' ]
         for port in range(0, len(data)):
-            label_values = self.get_common_label_values() + [ port ]
+            label_values = self.get_common_label_values() + [ data[port]['lan_port'] ]
             for k in data[port]:
                 v = data[port][k]
                 if k == 'lan_port':

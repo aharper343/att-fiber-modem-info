@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  att-modem-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: andrew/att-modem-exporter:latest
+    container_name: att-modem-exporter
+    ports:
+      - "8666:8666"
+    environment:
+      - MODEM_URL=${MODEM_URL:-http://192.168.1.254}
+      - MODEM_ACCESS_CODE=${MODEM_ACCESS_CODE}
+      - MODEM_ID=${MODEM_ID:-att}
+      - SERVER_HOSTNAME=0.0.0.0
+      - SERVER_PORT=8666
+    restart: unless-stopped
+    networks:
+      - modem-exporter-network
+
+networks:
+  modem-exporter-network:
+    driver: bridge
+
